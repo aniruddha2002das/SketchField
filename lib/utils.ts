@@ -66,7 +66,18 @@ import {
   LayerType,
 } from "@/types/canvas";
 
-const COLORS = ["#DC2626", "#D97706", "#059669", "#7C3AED", "#DB2777"];
+
+const COLORS = [
+  "#DC2626", // Red-600
+  "#D97706", // Orange-500
+  "#AB1116", // Red-700 variant
+  "#65A30D", // Lime-600
+  "#F97316", // Orange-400
+  "#6D28D9", // Purple-400
+  "#F43F5E", // Rose-500
+  "#14B8A6", // Teal-400
+  "#0EA5E9", // Sky-400
+];
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
