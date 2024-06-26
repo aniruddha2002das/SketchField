@@ -23,7 +23,6 @@ const images = [
  * If the use has not logged in, it will throw an Error.
  * Otherwise, it will create a board.
  */
-
 export const create = mutation({
   args: {
     orgId: v.string(),
@@ -67,19 +66,19 @@ export const remove = mutation({
       throw new Error("Unauthorized");
     }
 
-    // // To delete favorite relation
-    // const userId = identity.subject;
+    // To delete favorite relation
+    const userId = identity.subject;
 
-    // const existingFavorite = await ctx.db
-    //   .query("userFavorites")
-    //   .withIndex("by_user_board", (q) =>
-    //     q.eq("userId", userId).eq("boardId", args.id)
-    //   )
-    //   .unique();
+    const existingFavorite = await ctx.db
+      .query("userFavorites")
+      .withIndex("by_user_board", (q) =>
+        q.eq("userId", userId).eq("boardId", args.id)
+      )
+      .unique();
 
-    // if (existingFavorite) {
-    //   await ctx.db.delete(existingFavorite._id);
-    // }
+    if (existingFavorite) {
+      await ctx.db.delete(existingFavorite._id);
+    }
 
     await ctx.db.delete(args.id);
   },
@@ -117,6 +116,118 @@ export const update = mutation({
     }
 
     const board = await ctx.db.patch(args.id, { title: args.title });
+
+    return board;
+  },
+});
+
+
+/** Api endpoint for favoriting a board.
+ * The function requires two arguments
+ *   board id and
+ *   orgId of type string
+ * The function 'favorite' will check if the user has logged in.
+ * If the user has not logged in, it will throw an error.
+ * The function 'favorite' will also check if the board exists.
+ * If the board does not exist, it will throw an error.
+ * The function 'favorite' will also check if the board has already been favorited.
+ * If the board has already been favorited, it will throw an error.
+ * Otherwise, it will favorite the board.
+ */
+export const favorite = mutation({
+  args: { id: v.id("boards"), orgId: v.string() },
+  handler: async (ctx, arg) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const board = await ctx.db.get(arg.id);
+
+    if (!board) {
+      throw new Error("Board not found");
+    }
+
+    const userId = identity.subject;
+
+    // To check if the user has already favorited the board
+    const existingFavorite = await ctx.db
+      .query("userFavorites")
+      .withIndex("by_user_board", (q) =>
+        q.eq("userId", userId).eq("boardId", board._id)
+      )
+      .unique();
+
+    if (existingFavorite) {
+      throw new Error("Board already favorite");
+    }
+
+    await ctx.db.insert("userFavorites", {
+      userId,
+      boardId: board._id,
+      orgId: arg.orgId,
+    });
+
+    return board;
+  },
+});
+
+
+
+/**
+ * Api endpoint to unfavorite a board.
+ * The function requires two arguments
+ *   board id and
+ *   orgId of type string
+ * The function 'unfavorite' will check if the user has logged in.
+ * If the user has not logged in, it will throw an error.
+ * The function 'unfavorite' will also check if the board exists.
+ * If the board does not exist, it will throw an error.
+ * The function 'unfavorite' will also check if the board has already been favorite.
+ * If the board has not already been favorite, it will throw an error.
+ * Otherwise, it will unfavorite the board.
+ */
+export const unfavorite = mutation({
+  args: { id: v.id("boards") },
+  handler: async (ctx, arg) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const board = await ctx.db.get(arg.id);
+
+    if (!board) {
+      throw new Error("Board not found");
+    }
+
+    const userId = identity.subject;
+
+    // To check if the user has already favorite the board
+    const existingFavorite = await ctx.db
+      .query("userFavorites")
+      .withIndex("by_user_board", (q) =>
+        q.eq("userId", userId).eq("boardId", board._id)
+      )
+      .unique();
+
+    if (!existingFavorite) {
+      throw new Error("Favorite board not found");
+    }
+
+    await ctx.db.delete(existingFavorite._id);
+
+    return board;
+  },
+});
+
+
+export const get = query({
+  args: { id: v.id("boards") },
+  handler: async (ctx, args) => {
+    const board = ctx.db.get(args.id);
 
     return board;
   },

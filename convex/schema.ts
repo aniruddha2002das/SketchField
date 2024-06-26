@@ -14,6 +14,7 @@ export default defineSchema({
       searchField: "title",
       filterFields: ["orgId"],
     }),
+    
   userFavorites: defineTable({
     orgId: v.string(),
     userId: v.string(),
